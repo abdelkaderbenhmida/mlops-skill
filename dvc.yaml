@@ -1,0 +1,20 @@
+stages:
+  validate:
+    cmd: python src/data/ingestion.py && great_expectations checkpoint run dataset_checkpoint
+    outs:
+      - data/raw/dataset.csv
+
+  preprocess:
+    cmd: python src/data/preprocessing.py
+    deps:
+      - data/raw/dataset.csv
+    outs:
+      - data/processed/dataset_clean.csv
+
+  build_features:
+    cmd: python src/features/build_features.py
+    deps:
+      - data/processed/dataset_clean.csv
+    outs:
+      - data/features/features.parquet
+      - data/features/feast_features.parquet
