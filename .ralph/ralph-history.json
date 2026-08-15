@@ -361,12 +361,29 @@
       "exitCode": 0,
       "completionDetected": false,
       "errors": []
+    },
+    {
+      "iteration": 20,
+      "startedAt": "2026-08-15T18:36:52.055Z",
+      "endedAt": "2026-08-15T18:38:57.662Z",
+      "durationMs": 125540,
+      "agent": "opencode",
+      "model": "",
+      "toolsUsed": {},
+      "filesModified": [],
+      "exitCode": 1,
+      "completionDetected": false,
+      "errors": [
+        "\u001b[91m\u001b[1mError: \u001b[0mStructurally heavy chat request capacity is busy; retry shortly."
+      ]
     }
   ],
-  "totalDurationMs": 1919748,
+  "totalDurationMs": 2045288,
   "struggleIndicators": {
-    "repeatedErrors": {},
-    "noProgressIterations": 1,
+    "repeatedErrors": {
+      "\u001b[91m\u001b[1mError: \u001b[0mStructurally heavy chat request capacity is busy; retry shortly.": 1
+    },
+    "noProgressIterations": 2,
     "shortIterations": 0
   }
 }
