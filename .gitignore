@@ -30,3 +30,6 @@ mlflow/mlruns/*
 !monitoring/reports/.gitkeep
 !monitoring/logs/.gitkeep
 !mlflow/mlruns/.gitkeep
+
+# Ralph loop state
+.ralph/
