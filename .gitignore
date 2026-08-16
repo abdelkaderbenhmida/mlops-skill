@@ -1,1 +1,32 @@
-.worktrees/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.ipynb_checkpoints/
+.pytest_cache/
+.dvc/
+
+# generated artifacts (DVC / pipelines regenerate them)
+data/processed/*
+data/features/*
+data/reference/*
+data/feast_registry/
+models/*
+reports/*
+artifacts/*
+monitoring/reports/*
+monitoring/logs/*
+mlflow/mlruns/*
+*.onnx
+
+# keep placeholder dirs
+!data/processed/.gitkeep
+!data/features/.gitkeep
+!data/reference/.gitkeep
+!models/.gitkeep
+!reports/.gitkeep
+!artifacts/.gitkeep
+!monitoring/reports/.gitkeep
+!monitoring/logs/.gitkeep
+!mlflow/mlruns/.gitkeep

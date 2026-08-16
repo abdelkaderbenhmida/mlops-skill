@@ -1,0 +1,8 @@
+project: churn_feature_store
+registry: data/feast_registry/registry.db
+provider: local
+online_store:
+    path: data/feast_registry/online_store.db
+offline_store:
+    type: file
+entity_key_serialization_version: 3

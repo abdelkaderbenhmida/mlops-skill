@@ -1,0 +1,80 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mlops-full-project"
+version = "0.1.0"
+description = "Pure-MLOps project covering feature store, tuning, explainability, fairness, serving, monitoring, champion/challenger"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "scikit-learn==1.5.0",
+    "pandas==2.2.2",
+    "numpy==1.26.4",
+    "scipy==1.13.1",
+    "mlflow==2.15.1",
+    "optuna==3.6.1",
+    "flaml==2.3.2",
+    "feast==0.38.1",
+    "zenml==0.66.0",
+    "shap==0.45.0",
+    "lime==0.2.0.1",
+    "fairlearn==0.10.0",
+    "deepchecks==1.0.1",
+    "great-expectations==0.18.15",
+    "skl2onnx==1.16.1",
+    "onnxruntime==1.19.2",
+    "evidently==0.4.27",
+    "bentoml==1.3.14",
+    "model-card-toolkit==1.4.0",
+    "joblib==1.4.2",
+    "tqdm==4.66.5",
+    "pyyaml==6.0.1",
+    "requests==2.32.3",
+    "matplotlib==3.9.2",
+    "seaborn==0.13.2",
+    "pytest==8.3.2",
+    "pytest-cov==5.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "black==24.4.2",
+    "isort==5.13.2",
+    "ruff==0.4.8",
+    "mypy==1.10.0",
+    "pre-commit==3.7.1",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*", "pipelines*", "feature_repo*", "model_cards*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+select = ["E", "F", "I", "N", "W", "UP", "B", "C4", "SIM", "PIE"]
+ignore = ["E501", "SIM103"]
+
+[tool.black]
+line-length = 100
+target-version = ["py310"]
+
+[tool.isort]
+profile = "black"
+line_length = 100
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+ignore_missing_imports = true
