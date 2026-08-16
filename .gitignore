@@ -33,3 +33,6 @@ mlflow/mlruns/*
 
 # Ralph loop state
 .ralph/
+
+# Worktrees
+.worktrees/
