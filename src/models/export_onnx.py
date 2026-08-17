@@ -7,6 +7,13 @@ the original sklearn model on the held-out test set.
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
 import argparse
 from pathlib import Path
 
@@ -66,6 +73,11 @@ def check_parity(model, X: pd.DataFrame, onnx_path: Path, n_features: int) -> di
     onnx_out = session.run(None, {"input": X_np})
     # ONNX output may be (proba) or (label, proba) depending on converter.
     onnx_proba = onnx_out[-1]
+    if isinstance(onnx_proba, list):
+        if isinstance(onnx_proba[0], dict):
+            onnx_proba = np.array([row[1] for row in onnx_proba])
+        else:
+            onnx_proba = np.asarray(onnx_proba)
     if onnx_proba.ndim == 2:
         onnx_proba = onnx_proba[:, 1]
 

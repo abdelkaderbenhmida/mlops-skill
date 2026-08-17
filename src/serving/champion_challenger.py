@@ -8,6 +8,13 @@ two models can be compared statistically a posteriori.
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
 import json
 import logging
 import random
@@ -120,6 +127,7 @@ def simulate_routing(n_requests: int = 1000, challenger_ratio: float = CHALLENGE
 
 
 def _load_sample_features(n: int):
+    import numpy as np
     import pandas as pd
 
     from src.features.build_features import build_features, feature_sets

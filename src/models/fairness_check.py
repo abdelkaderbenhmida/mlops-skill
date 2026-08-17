@@ -14,6 +14,13 @@ Results are saved as JSON + a bar chart in ``reports/``.
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
 import argparse
 import json
 from pathlib import Path
@@ -46,25 +53,27 @@ def _build_test_frame():
     """Return (y_test, y_pred, sensitive_series) aligned on the same split."""
     import joblib
 
-    from src.features.build_features import build_features, feature_sets
+    from src.features.build_features import build_features
     from src.models.train import _preprocess_pipeline
 
     raw = pd.read_csv("data/raw/dataset.csv")
     clean = _preprocess_pipeline(raw)
-    frame = build_features(clean, include_sensitive=True)
+
+    # gender is one-hot encoded (and dropped) inside build_features; keep the
+    # raw series aligned positionally with the feature frame for the audit.
+    gender_all = clean["gender"].reset_index(drop=True)
+    frame = build_features(clean, include_sensitive=False)
 
     model = joblib.load("models/churn_model.joblib")
 
-    # The model was trained without the sensitive column; drop it only after
-    # the split so we can keep gender for the audit.
     X = frame.drop(columns=["churn"])
     y = frame["churn"]
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.25, random_state=42, stratify=y
     )
 
-    sensitive = X_test["gender"].reset_index(drop=True)
-    X_test_model = X_test.drop(columns=["gender"]).reset_index(drop=True)
+    sensitive = gender_all.iloc[X_test.index].reset_index(drop=True)
+    X_test_model = X_test.reset_index(drop=True)
     y_pred = model.predict(X_test_model)
 
     return y_test.reset_index(drop=True), y_pred, sensitive

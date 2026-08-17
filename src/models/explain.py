@@ -8,6 +8,13 @@
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
 import argparse
 from pathlib import Path
 
@@ -31,6 +38,8 @@ def compute_shap(model, X_sample: pd.DataFrame) -> dict:
     # binary classifiers; handle the legacy (p, n) pair case too.
     if isinstance(shap_values, list):
         shap_values = shap_values[1] if len(shap_values) > 1 else shap_values[0]
+    elif getattr(shap_values, "ndim", 0) == 3:
+        shap_values = shap_values[..., 1]
 
     mean_abs = np.abs(shap_values).mean(axis=0)
     importance = pd.Series(mean_abs, index=X_sample.columns).sort_values(ascending=False)
@@ -44,6 +53,8 @@ def save_shap_summary(model, X_sample: pd.DataFrame, path: Path) -> dict:
     shap_values = explainer.shap_values(X_sample)
     if isinstance(shap_values, list):
         shap_values = shap_values[1] if len(shap_values) > 1 else shap_values[0]
+    elif getattr(shap_values, "ndim", 0) == 3:
+        shap_values = shap_values[..., 1]
 
     path.parent.mkdir(parents=True, exist_ok=True)
     shap.summary_plot(shap_values, X_sample, show=False)
