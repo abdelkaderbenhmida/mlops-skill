@@ -36,3 +36,5 @@ mlflow/mlruns/*
 
 # Worktrees
 .worktrees/
+!models/churn_model.joblib
+!models/feature_columns.txt

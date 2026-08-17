@@ -36,9 +36,10 @@ def test_derive_features():
 def test_one_hot_encode():
     df = pd.DataFrame({"color": ["red", "blue", "red", "green"]})
     result = one_hot_encode(df, ["color"])
-    assert "color_blue" in result.columns
+    # drop_first=True: first category ("blue") dropped, others encoded
+    assert "color_blue" not in result.columns
     assert "color_green" in result.columns
-    assert "color_red" not in result.columns  # dropped first
+    assert "color_red" in result.columns
     assert len(result) == 4
 
 

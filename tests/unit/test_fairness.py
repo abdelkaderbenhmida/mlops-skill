@@ -35,7 +35,7 @@ def test_fairness_rejection_threshold():
     """Test that dp_diff > 0.1 triggers rejection."""
     # M group: 80% positive predictions, F group: 40%
     # DP diff = 0.4 > 0.1 -> should fail
-    y_true = np.array([0, 1, 0, 1, 0, 1, 0, 1] * 5)
+    y_true = np.array([0, 1, 0, 1, 0, 1, 0, 1] * 10)
     y_pred = np.array([1, 1, 1, 1, 1, 1, 1, 1,  # M: all 1
                        1, 1, 1, 1, 0, 0, 0, 0] * 5)  # F: half 1, half 0
     sensitive = np.array(["M"] * 40 + ["F"] * 40)
@@ -51,7 +51,7 @@ def test_fairness_rejection_threshold():
 def test_fairness_pass_threshold():
     """Test that dp_diff <= 0.1 passes."""
     # M group: 55% positive, F group: 50% -> DP diff = 0.05 < 0.1 -> pass
-    y_true = np.array([0, 1, 0, 1, 0, 1, 0, 1] * 5)
+    y_true = np.array([0, 1, 0, 1, 0, 1, 0, 1] * 10)
     y_pred = np.array([1, 1, 1, 1, 0, 1, 0, 1,  # M: 6/8 = 0.75
                        0, 1, 1, 0, 0, 1, 0, 0] * 5)  # F: 4/8 = 0.5
     sensitive = np.array(["M"] * 40 + ["F"] * 40)
@@ -65,7 +65,7 @@ def test_fairness_pass_threshold():
     y_pred_balanced = np.array([1, 1, 0, 1, 0, 1, 0, 1] * 5)  # 5/8 = 0.625
     y_pred_balanced_f = np.array([0, 1, 1, 0, 0, 1, 0, 0] * 5)  # 4/8 = 0.5
     dp_diff_balanced = demographic_parity_difference(
-        np.concatenate([y_true]*5),
+        y_true,
         np.concatenate([y_pred_balanced, y_pred_balanced_f]),
         sensitive_features=np.array(["M"]*40 + ["F"]*40)
     )
