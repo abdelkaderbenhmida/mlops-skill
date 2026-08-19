@@ -11,6 +11,16 @@ from src.features.build_features import (
 )
 
 
+def _fraud_frame():
+    return pd.DataFrame({
+        "Time": [0.0, 10.0, 20.0],
+        "Amount": [50.0, 250.0, 3000.0],
+        "V1": [1.1, -2.2, 0.5],
+        "V2": [0.5, -0.3, 1.2],
+        "Class": [0, 1, 0],
+    })
+
+
 def test_derive_features():
     df = pd.DataFrame({
         "tenure_months": [1, 12, 36, 60],
@@ -33,6 +43,12 @@ def test_derive_features():
     assert result.loc[2, "is_long_tenure"] == 1
 
 
+def test_derive_features_passthrough_on_fraud_data():
+    df = _fraud_frame()
+    result = derive_features(df)
+    assert list(result.columns) == list(df.columns)
+
+
 def test_one_hot_encode():
     df = pd.DataFrame({"color": ["red", "blue", "red", "green"]})
     result = one_hot_encode(df, ["color"])
@@ -44,67 +60,33 @@ def test_one_hot_encode():
 
 
 def test_build_features():
-    df = pd.DataFrame({
-        "customer_id": [1, 2, 3],
-        "timestamp": pd.to_datetime(["2023-01-01", "2023-01-02", "2023-01-03"]),
-        "age": [25, 30, 35],
-        "gender": ["M", "F", "M"],
-        "region": ["north", "south", "east"],
-        "tenure_months": [12, 24, 36],
-        "monthly_charges": [50.0, 60.0, 70.0],
-        "total_charges": [600.0, 1440.0, 2520.0],
-        "num_services": [2, 3, 4],
-        "contract_type": ["one_year", "two_year", "month-to-month"],
-        "payment_method": ["credit_card", "bank_transfer", "electronic_check"],
-        "support_tickets": [1, 0, 2],
-        "avg_call_minutes": [100.0, 50.0, 200.0],
-        "has_online_backup": [1, 0, 1],
-        "has_device_protection": [0, 1, 0],
-        "has_tech_support": [1, 0, 1],
-        "churn": [0, 1, 0],
-    })
+    df = _fraud_frame()
     result = build_features(df, include_sensitive=False)
-    assert "churn" in result.columns
-    assert "gender" not in result.columns
-    assert "customer_id" not in result.columns
-    assert "timestamp" not in result.columns
+    assert "Class" in result.columns
+    assert "Time" in result.columns
+    assert "Amount" in result.columns
+    assert "V1" in result.columns
+    assert len(result) == 3
 
 
 def test_feature_sets():
     df = pd.DataFrame({
-        "feature1": [1, 2, 3],
-        "feature2": [4, 5, 6],
-        "churn": [0, 1, 0],
+        "V1": [1, 2, 3],
+        "V2": [4, 5, 6],
+        "Class": [0, 1, 0],
     })
     sets = feature_sets(df)
     assert "X" in sets
     assert "y" in sets
-    assert list(sets["X"].columns) == ["feature1", "feature2"]
+    assert list(sets["X"].columns) == ["V1", "V2"]
     assert list(sets["y"]) == [0, 1, 0]
 
 
 def test_build_feast_features():
-    df = pd.DataFrame({
-        "customer_id": [1, 2, 3],
-        "timestamp": pd.to_datetime(["2023-01-01", "2023-01-02", "2023-01-03"]),
-        "age": [25, 30, 35],
-        "gender": ["M", "F", "M"],
-        "region": ["north", "south", "east"],
-        "tenure_months": [12, 24, 36],
-        "monthly_charges": [50.0, 60.0, 70.0],
-        "total_charges": [600.0, 1440.0, 2520.0],
-        "num_services": [2, 3, 4],
-        "contract_type": ["one_year", "two_year", "month-to-month"],
-        "payment_method": ["credit_card", "bank_transfer", "electronic_check"],
-        "support_tickets": [1, 0, 2],
-        "avg_call_minutes": [100.0, 50.0, 200.0],
-        "has_online_backup": [1, 0, 1],
-        "has_device_protection": [0, 1, 0],
-        "has_tech_support": [1, 0, 1],
-        "churn": [0, 1, 0],
-    })
+    df = _fraud_frame()
     result = build_feast_features(df)
-    assert "customer_id" in result.columns
-    assert "timestamp" in result.columns
-    assert "churn" in result.columns
-    assert result["timestamp"].dtype == "datetime64[ns]"
+    assert "Time" in result.columns
+    assert "Amount" in result.columns
+    assert "V1" in result.columns
+    assert "Class" in result.columns
+    assert result["Time"].dtype == "float64"

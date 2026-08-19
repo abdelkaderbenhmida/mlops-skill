@@ -1,4 +1,4 @@
-"""Model training with full MLflow tracking.
+"""Model training with full MLflow tracking for fraud detection.
 
 Every training run logs:
 - hyperparameters,
@@ -19,6 +19,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 import argparse
 import logging
+import os
 from pathlib import Path
 
 import matplotlib
@@ -38,8 +39,8 @@ from src.config import (
     REPORTS_DIR,
     TARGET_COL,
     F1_PROMOTION_THRESHOLD,
+    AUC_PROMOTION_THRESHOLD,
 )
-from src.features.build_features import build_features, feature_sets
 
 logger = logging.getLogger(__name__)
 
@@ -48,24 +49,24 @@ DEFAULT_PARAMS = {
     "max_depth": 12,
     "min_samples_leaf": 5,
     "max_features": "sqrt",
+    "class_weight": "balanced_subsample",
     "random_state": 42,
+    "n_jobs": -1,
 }
 
 
 def load_training_data() -> tuple[pd.DataFrame, pd.Series]:
-    """Load raw data and build the full feature matrix (sensitive excluded)."""
-    raw = pd.read_csv("data/raw/dataset.csv")
-    clean = _preprocess_pipeline(raw)
-    frame = build_features(clean, include_sensitive=False)
-    sets = feature_sets(frame)
-    return sets["X"], sets["y"]
-
-
-def _preprocess_pipeline(raw: pd.DataFrame) -> pd.DataFrame:
-    """Small local preprocess used by training (keeps module self-contained)."""
+    """Load raw data and build the feature matrix for fraud detection."""
+    from src.data.ingestion import ingest_raw_data
     from src.data.preprocessing import preprocess
 
-    return preprocess(raw)
+    raw, _ = ingest_raw_data()
+    clean = preprocess(raw)
+
+    feature_cols = [c for c in clean.columns if c != TARGET_COL]
+    X = clean[feature_cols]
+    y = clean[TARGET_COL]
+    return X, y
 
 
 def save_confusion_matrix(y_true, y_pred, path: Path) -> None:
@@ -87,8 +88,8 @@ def train_and_log(
     y_train: pd.Series,
     y_test: pd.Series,
     params: dict | None = None,
-    run_name: str = "churn_rf",
-    experiment_name: str = "churn_prediction",
+    run_name: str = "fraud_rf",
+    experiment_name: str = "fraud_detection",
     register: bool = False,
 ) -> dict:
     """Train a RandomForest classifier, log everything to MLflow.
@@ -96,6 +97,7 @@ def train_and_log(
     Returns a dict with the model, metrics and run id for downstream steps.
     """
     params = params or dict(DEFAULT_PARAMS)
+    os.environ.setdefault("MLFLOW_ALLOW_FILE_STORE", "true")
     mlflow.set_tracking_uri(MLFLOW_DIR.as_uri())
     mlflow.set_experiment(experiment_name)
 
@@ -108,13 +110,13 @@ def train_and_log(
         metrics = {
             "accuracy": accuracy_score(y_test, y_pred),
             "f1_score": f1_score(y_test, y_pred),
-            "roc_auc": roc_auc_score(y_test, y_pred),
+            "roc_auc": roc_auc_score(y_test, y_proba),
         }
 
         mlflow.log_params(model.get_params())
         mlflow.log_metrics(metrics)
         mlflow.log_param("n_features", X_train.shape[1])
-        mlflow.log_param("data_source", "data/raw/dataset.csv")
+        mlflow.log_param("data_source", str("/tmp/realdata/creditcard.csv"))
         mlflow.set_tag("pipeline", run_name)
 
         cm_path = REPORTS_DIR / "confusion_matrix.png"
@@ -130,7 +132,7 @@ def train_and_log(
             mlflow.sklearn.log_model(
                 model,
                 artifact_path="model",
-                registered_model_name="churn_model",
+                registered_model_name="fraud-detection-model",
             )
 
         mlflow.end_run()
@@ -145,11 +147,11 @@ def train_and_log(
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Train and track the churn model.")
+    parser = argparse.ArgumentParser(description="Train and track the fraud detection model.")
     parser.add_argument("--register", action="store_true", help="Register in MLflow registry.")
-    parser.add_argument("--run-name", default="churn_rf")
+    parser.add_argument("--run-name", default="fraud_rf")
     parser.add_argument("--test-size", type=float, default=0.25)
-    parser.add_argument("--experiment", default="churn_prediction")
+    parser.add_argument("--experiment", default="fraud_detection")
     args = parser.parse_args()
 
     X, y = load_training_data()
@@ -164,18 +166,21 @@ def main() -> None:
     )
 
     f1 = result["metrics"]["f1_score"]
-    status = "PASS" if f1 >= F1_PROMOTION_THRESHOLD else "FAIL"
-    print(f"Training done. F1={f1:.4f} (threshold {F1_PROMOTION_THRESHOLD}) -> {status}")
+    auc = result["metrics"]["roc_auc"]
+    f1_pass = f1 >= F1_PROMOTION_THRESHOLD
+    auc_pass = auc >= AUC_PROMOTION_THRESHOLD
+    status = "PASS" if (f1_pass and auc_pass) else "FAIL"
+    print(f"Training done. F1={f1:.4f} (threshold {F1_PROMOTION_THRESHOLD}) AUC={auc:.4f} (threshold {AUC_PROMOTION_THRESHOLD}) -> {status}")
     print(f"MLflow run: {result['run_id']}")
 
     # Persist model + feature columns for downstream steps.
     import joblib
 
     MODELS_DIR.mkdir(parents=True, exist_ok=True)
-    joblib.dump(result["model"], MODELS_DIR / "churn_model.joblib")
+    joblib.dump(result["model"], MODELS_DIR / "fraud_model.joblib")
     with open(MODELS_DIR / "feature_columns.txt", "w") as handle:
         handle.write("\n".join(result["feature_columns"]))
-    print("Model saved to models/churn_model.joblib")
+    print("Model saved to models/fraud_model.joblib")
 
 
 if __name__ == "__main__":

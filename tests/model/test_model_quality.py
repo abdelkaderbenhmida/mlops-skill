@@ -1,26 +1,32 @@
 """Model quality tests using Deepchecks."""
 import pytest
-import joblib
-import pandas as pd
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 
+from src.config import TARGET_COL
+from src.data.ingestion import ingest_raw_data
+from src.data.preprocessing import preprocess
+from src.models.train import DEFAULT_PARAMS
 
-@pytest.fixture
+
+@pytest.fixture(scope="module")
 def model_and_data():
-    """Load model and test data."""
-    from src.features.build_features import build_features, feature_sets
-    from src.models.train import _preprocess_pipeline
+    """Train a fraud model on real data and expose test split."""
+    raw, _ = ingest_raw_data()
+    clean = preprocess(raw)
 
-    raw = pd.read_csv("data/raw/dataset.csv")
-    clean = _preprocess_pipeline(raw)
-    frame = build_features(clean, include_sensitive=False)
-    sets = feature_sets(frame)
-    X = sets["X"]
-    y = sets["y"]
+    feature_cols = [c for c in clean.columns if c != TARGET_COL]
+    X = clean[feature_cols]
+    y = clean[TARGET_COL]
 
-    _, X_test, _, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.25, random_state=42, stratify=y
+    )
 
-    model = joblib.load("models/churn_model.joblib")
+    params = {**DEFAULT_PARAMS, "n_estimators": 100}
+    model = RandomForestClassifier(**params)
+    model.fit(X_train, y_train)
+
     return model, X_test, y_test
 
 
@@ -63,9 +69,9 @@ def test_deepchecks_suite(model_and_data):
 
         # Deepchecks needs the full dataframe with label
         test_df = X_test.copy()
-        test_df["churn"] = y_test.values
+        test_df[TARGET_COL] = y_test.values
 
-        ds = Dataset(test_df, label="churn")
+        ds = Dataset(test_df, label=TARGET_COL)
         suite = full_suite()
         result = suite.run(ds, model=model)
 
@@ -97,8 +103,8 @@ def test_model_feature_importance_stable(model_and_data):
     top_features = np.argsort(importances)[-5:]  # Top 5 indices
     top_feature_names = [X_test.columns[i] for i in top_features]
 
-    # These are expected to be among top features based on data generation
-    expected_important = {"tenure_months", "monthly_charges", "contract_type", "support_tickets"}
+    # PCA components known to drive credit card fraud detection
+    expected_important = {"V14", "V17", "V12", "V10", "V4", "V11", "V3"}
     found_important = set(top_feature_names)
 
     # At least 2 of the expected important features should be in top 5

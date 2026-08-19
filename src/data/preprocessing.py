@@ -1,4 +1,4 @@
-"""Pure preprocessing functions.
+"""Pure preprocessing functions for credit card fraud data.
 
 Every transformation is a pure function operating on a DataFrame and
 returning a new DataFrame, so each step is independently testable and
@@ -14,7 +14,6 @@ import pandas as pd
 from src.config import (
     BINARY_FEATURES,
     CATEGORICAL_FEATURES,
-    ID_COL,
     NUMERIC_FEATURES,
     TARGET_COL,
     TIMESTAMP_COL,
@@ -28,8 +27,8 @@ def drop_duplicates(df: pd.DataFrame) -> pd.DataFrame:
 
 def drop_missing(df: pd.DataFrame, columns: Optional[List[str]] = None) -> pd.DataFrame:
     """Drop rows with missing values on critical columns."""
-    cols = columns or [ID_COL, TARGET_COL, "age", "gender", "tenure_months"]
-    return df.dropna(subset=cols).reset_index(drop=True)
+    cols = columns or [TARGET_COL] + NUMERIC_FEATURES
+    return df.dropna(subset=[c for c in cols if c in df.columns]).reset_index(drop=True)
 
 
 def clamp_numeric(
@@ -37,22 +36,20 @@ def clamp_numeric(
     ranges: Optional[dict] = None,
     numeric_features: Optional[List[str]] = None,
 ) -> pd.DataFrame:
-    """Clamp numeric features to sane business ranges (age 18-100 etc.)."""
+    """Clamp numeric features to reasonable ranges."""
     bounds = ranges or {
-        "age": (18, 100),
-        "tenure_months": (0, 120),
-        "monthly_charges": (0, 1000),
-        "total_charges": (0, 100000),
-        "num_services": (0, 10),
-        "support_tickets": (0, 100),
-        "avg_call_minutes": (0, 2000),
+        "Time": (0, None),
+        "Amount": (0, 100000),
     }
     features = numeric_features or NUMERIC_FEATURES
     out = df.copy()
     for col in features:
         if col in out.columns and col in bounds:
             lo, hi = bounds[col]
-            out[col] = out[col].clip(lower=lo, upper=hi)
+            if hi is not None:
+                out[col] = out[col].clip(lower=lo, upper=hi)
+            else:
+                out[col] = out[col].clip(lower=lo)
     return out
 
 
@@ -62,16 +59,8 @@ def cast_dtypes(df: pd.DataFrame) -> pd.DataFrame:
     for col in NUMERIC_FEATURES:
         if col in out.columns:
             out[col] = pd.to_numeric(out[col], errors="coerce")
-    for col in BINARY_FEATURES + [TARGET_COL]:
-        if col in out.columns:
-            out[col] = out[col].astype("int8")
-    for col in CATEGORICAL_FEATURES:
-        if col in out.columns:
-            out[col] = out[col].astype("category")
-    if ID_COL in out.columns:
-        out[ID_COL] = out[ID_COL].astype("int64")
-    if TIMESTAMP_COL in out.columns:
-        out[TIMESTAMP_COL] = pd.to_datetime(out[TIMESTAMP_COL])
+    if TARGET_COL in out.columns:
+        out[TARGET_COL] = out[TARGET_COL].astype("int8")
     return out
 
 

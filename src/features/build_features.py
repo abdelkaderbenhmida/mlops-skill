@@ -34,8 +34,14 @@ DERIVED_FEATURES: List[str] = [
 
 
 def derive_features(df: pd.DataFrame) -> pd.DataFrame:
-    """Compute derived (engineered) features, row-local only."""
+    """Compute derived (engineered) features, row-local only.
+
+    Derived features are churn-domain specific; datasets without the churn
+    columns (e.g. credit card fraud with PCA features) pass through unchanged.
+    """
     out = df.copy()
+    if "tenure_months" not in out.columns:
+        return out
 
     tenure = out["tenure_months"].replace(0, 1)
     services = out["num_services"].clip(lower=1)
@@ -81,6 +87,10 @@ def build_features(
     if not include_sensitive:
         drop += ["gender"]
     drop = [c for c in drop if c in df.columns]
+    # Keep a numeric time column (e.g. fraud "Time" feature); only drop
+    # datetime-typed timestamps that are useless to the model.
+    if TIMESTAMP_COL in drop and pd.api.types.is_numeric_dtype(df[TIMESTAMP_COL]):
+        drop.remove(TIMESTAMP_COL)
 
     out = derive_features(df).drop(columns=drop)
 
@@ -130,9 +140,9 @@ def build_feast_features(df: pd.DataFrame) -> pd.DataFrame:
     """
     out = derive_features(df)
     keep = [ID_COL, TIMESTAMP_COL] + NUMERIC_FEATURES + BINARY_FEATURES + CATEGORICAL_FEATURES + [TARGET_COL]
-    keep = [c for c in keep if c in out.columns]
+    keep = [c for c in dict.fromkeys(keep) if c in out.columns]
     out = out[keep]
-    if TIMESTAMP_COL in out.columns:
+    if TIMESTAMP_COL in out.columns and not pd.api.types.is_numeric_dtype(out[TIMESTAMP_COL]):
         out[TIMESTAMP_COL] = pd.to_datetime(out[TIMESTAMP_COL])
     return out.reset_index(drop=True)
 

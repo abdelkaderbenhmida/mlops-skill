@@ -1,6 +1,6 @@
-"""Data ingestion: load raw data and log key facts.
+"""Data ingestion: load raw credit card fraud data and log key facts.
 
-Logs the row count, the covered time period, and a SHA256 hash of the raw
+Logs the row count, class distribution, and a SHA256 hash of the raw
 source file so every downstream artifact can be traced back to its input.
 """
 
@@ -31,17 +31,18 @@ def ingest_raw_data(path=RAW_DATA_PATH) -> Tuple[pd.DataFrame, dict]:
     """Load the raw CSV and log ingestion metadata.
 
     Returns ``(dataframe, metadata)`` where metadata contains the row count,
-    the covered time period, and the source file hash.
+    class distribution, and the source file hash.
     """
     data_hash = file_hash(path)
     df = pd.read_csv(path)
 
-    time_col = "timestamp" if "timestamp" in df.columns else None
-    if time_col is not None:
-        df[time_col] = pd.to_datetime(df[time_col])
+    time_col = "Time" if "Time" in df.columns else None
+    target_col = "Class" if "Class" in df.columns else None
+
+    class_dist = df[target_col].value_counts().to_dict() if target_col else {}
 
     period = (
-        f"{df[time_col].min()} -> {df[time_col].max()}"
+        f"{df[time_col].min()} -> {df[time_col].max()} (seconds from first transaction)"
         if time_col is not None
         else "n/a"
     )
@@ -52,9 +53,13 @@ def ingest_raw_data(path=RAW_DATA_PATH) -> Tuple[pd.DataFrame, dict]:
         "time_period": period,
         "source_file": str(path),
         "source_hash": data_hash,
+        "class_distribution": class_dist,
+        "fraud_rate": class_dist.get(1, 0) / len(df) if len(df) > 0 else 0,
     }
 
     logger.info("Ingested %d rows from %s", len(df), path)
+    logger.info("Class distribution: %s", class_dist)
+    logger.info("Fraud rate: %.4f%%", metadata["fraud_rate"] * 100)
     logger.info("Covered time period: %s", period)
     logger.info("Source file hash: %s", data_hash)
 

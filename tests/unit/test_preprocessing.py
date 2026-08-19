@@ -25,46 +25,35 @@ def test_drop_missing():
 
 
 def test_clamp_numeric():
-    df = pd.DataFrame({"age": [10, 50, 120], "monthly_charges": [-10, 50, 2000]})
+    df = pd.DataFrame({"Time": [-10.0, 100.0, 5000.0], "Amount": [-50.0, 250.0, 250000.0]})
     result = clamp_numeric(df)
-    assert result["age"].between(18, 100).all()
-    assert result["monthly_charges"].between(0, 1000).all()
+    assert (result["Time"] >= 0).all()
+    assert result["Amount"].between(0, 100000).all()
 
 
 def test_cast_dtypes():
     df = pd.DataFrame({
-        "age": [25, 30],
-        "monthly_charges": [50.0, 60.0],
-        "churn": [0, 1],
-        "gender": ["M", "F"],
+        "Time": [0.0, 10.0],
+        "Amount": [50.0, 60.0],
+        "V1": [-1.2, 0.5],
+        "Class": [0, 1],
     })
     result = cast_dtypes(df)
-    assert result["age"].dtype == "int64"
-    assert result["monthly_charges"].dtype == "float64"
-    assert result["churn"].dtype == "int8"
-    assert result["gender"].dtype.name == "category"
+    assert result["Time"].dtype == "float64"
+    assert result["Amount"].dtype == "float64"
+    assert result["V1"].dtype == "float64"
+    assert result["Class"].dtype == "int8"
 
 
 def test_preprocess_chain():
     df = pd.DataFrame({
-        "customer_id": [1, 2, 2],
-        "timestamp": ["2023-01-01", "2023-01-02", "2023-01-02"],
-        "age": [25, 30, 30],
-        "gender": ["M", "F", "F"],
-        "tenure_months": [12, 24, 24],
-        "monthly_charges": [50.0, 60.0, 60.0],
-        "total_charges": [600.0, 1440.0, 1440.0],
-        "num_services": [2, 3, 3],
-        "contract_type": ["one_year", "two_year", "two_year"],
-        "payment_method": ["credit_card", "bank_transfer", "bank_transfer"],
-        "support_tickets": [1, 0, 0],
-        "avg_call_minutes": [100.0, 50.0, 50.0],
-        "has_online_backup": [1, 0, 0],
-        "has_device_protection": [0, 1, 1],
-        "has_tech_support": [1, 0, 0],
-        "churn": [0, 1, 1],
+        "Time": [0.0, 10.0, 10.0],
+        "Amount": [50.0, -20.0, -20.0],
+        "V1": [1.1, 2.2, 2.2],
+        "V2": [0.5, -0.3, -0.3],
+        "Class": [0, 1, 1],
     })
     result = preprocess(df)
     assert len(result) == 2  # deduped
-    assert result["age"].between(18, 100).all()
-    assert result["churn"].dtype == "int8"
+    assert (result["Amount"] >= 0).all()
+    assert result["Class"].dtype == "int8"
