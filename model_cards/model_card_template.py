@@ -40,9 +40,13 @@ def generate_model_card(
     gates = report.get("gates", {})
 
     lines = [
-        "# Model Card: Customer Churn Classifier",
+        "# Model Card: Customer Churn Classifier (Attest demo artifact)",
         "",
         f"*Generated automatically on {datetime.datetime.now().isoformat()}*",
+        "",
+        "> Auto-generated demo artifact of the Attest model-risk platform (see",
+        "> `mlops-full-mlops-skills-project.md`). The platform's target use case is model risk",
+        "> & AI compliance; this churn model exercises the platform's governance pipeline.",
         "",
         "## Model details",
         "",
@@ -52,7 +56,7 @@ def generate_model_card(
         "",
         "## Intended use",
         "",
-        "- Valid: churn risk scoring for telecom customers",
+        "- Valid: churn risk scoring for telecom customers (demo only)",
         "- Avoid: credit decisions, medical predictions, or any other domain",
         "",
         "## Training data",
