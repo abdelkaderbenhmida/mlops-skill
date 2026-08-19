@@ -1,6 +1,12 @@
-# Model Card: Customer Churn Classifier
+# Model Card: Customer Churn Classifier (Attest demo artifact)
 
 *Generated automatically on 2026-08-17T13:10:39.187911*
+
+> This card is the auto-generated Evidence Pack artifact for the **demo model** bundled with
+> the Attest platform (see `mlops-full-mlops-skills-project.md`). The platform's target use
+> case is consumer credit decisioning; the demo model below is a churn classifier trained on
+> synthetic telecom-style data. Regenerated at every promotion by
+> `model_cards/model_card_template.py`.
 
 ## Model details
 
