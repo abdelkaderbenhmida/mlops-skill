@@ -1,6 +1,12 @@
-"""FastAPI app for Fraud Detection (P3) — self-contained, trains on real creditcard.csv at startup."""
+"""FastAPI app for Fraud Detection (P3) — self-contained, trains on creditcard.csv at startup.
+
+Data comes from the repository (``data/raw/creditcard.csv``, produced by
+``data/raw/generate_creditcard_data.py``); set FRAUD_DATA_PATH to point at a
+real export instead.
+"""
 
 import os
+import subprocess
 import sys
 import time
 import numpy as np
@@ -18,8 +24,12 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import roc_auc_score, f1_score
 
-UI_DIR = Path(__file__).parent.parent / "ui"
-REAL_DATA_PATH = Path("/tmp/realdata/creditcard.csv")
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+UI_DIR = PROJECT_ROOT / "ui"
+GENERATOR = PROJECT_ROOT / "data" / "raw" / "generate_creditcard_data.py"
+REAL_DATA_PATH = Path(
+    os.getenv("FRAUD_DATA_PATH", PROJECT_ROOT / "data" / "raw" / "creditcard.csv")
+)
 MODEL = None
 SCALER = None
 FEATURE_COLS = None
@@ -67,7 +77,14 @@ class PredictResponse(BaseModel):
     risk_level: str
 
 def load_real_data():
-    """Load real creditcard.csv from Kaggle mirror."""
+    """Load creditcard.csv, generating the synthetic demo file if absent."""
+    if not REAL_DATA_PATH.exists():
+        print(f"P3: {REAL_DATA_PATH} missing, generating synthetic demo data")
+        REAL_DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
+        subprocess.run(
+            [sys.executable, str(GENERATOR), "--output", str(REAL_DATA_PATH)],
+            check=True,
+        )
     df = pd.read_csv(REAL_DATA_PATH)
     # Drop NaN rows
     initial = len(df)
@@ -112,7 +129,7 @@ def train_model():
         "auc": round(auc, 4),
         "f1": round(f1, 4),
         "trained_at": datetime.now(timezone.utc).isoformat(),
-        "data_source": "creditcard.csv (Kaggle Credit Card Fraud Detection)"
+        "data_source": str(REAL_DATA_PATH)
     }
 
 @asynccontextmanager
@@ -124,7 +141,7 @@ app = FastAPI(title="Fraud Detection API (Real Data)", version="1.0.0", lifespan
 
 @app.get("/health")
 async def health():
-    return {"status": "healthy", "model_loaded": MODEL is not None, "data_source": "creditcard.csv"}
+    return {"status": "healthy", "model_loaded": MODEL is not None, "data_source": str(REAL_DATA_PATH)}
 
 @app.post("/predict", response_model=PredictResponse)
 async def predict(req: PredictRequest):

@@ -1,20 +1,30 @@
+# data/raw/dataset.csv is versioned in Git (spec §11: raw/ holds the immutable
+# raw data plus its generator), so it is a pipeline *dependency*, not an output.
+# Regenerate it deterministically with:
+#   python3 data/raw/generate_churn_data.py --output data/raw/dataset.csv
 stages:
   validate:
-    cmd: python src/data/ingestion.py && great_expectations checkpoint run dataset_checkpoint
-    outs:
-      - data/raw/dataset.csv
-
-  preprocess:
-    cmd: python src/data/preprocessing.py
+    cmd: python3 -m src.data.ingestion && python3 -m src.data.validation
     deps:
       - data/raw/dataset.csv
+      - src/data/ingestion.py
+      - src/data/validation.py
+      - great_expectations/expectations/dataset_suite.json
+      - great_expectations/checkpoints/dataset_checkpoint.yml
+
+  preprocess:
+    cmd: python3 -m src.data.preprocessing
+    deps:
+      - data/raw/dataset.csv
+      - src/data/preprocessing.py
     outs:
       - data/processed/dataset_clean.csv
 
   build_features:
-    cmd: python src/features/build_features.py
+    cmd: python3 -m src.features.build_features
     deps:
       - data/processed/dataset_clean.csv
+      - src/features/build_features.py
     outs:
       - data/features/features.parquet
       - data/features/feast_features.parquet

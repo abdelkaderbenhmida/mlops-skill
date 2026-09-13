@@ -31,6 +31,8 @@ from src.config import MLFLOW_DIR, REPORTS_DIR
 def compute_shap(model, X_sample: pd.DataFrame) -> dict:
     import shap
 
+# TODO: medium - Add parameter to control number of top SHAP features returned
+
     explainer = shap.TreeExplainer(model)
     shap_values = explainer.shap_values(X_sample)
 
@@ -48,6 +50,8 @@ def compute_shap(model, X_sample: pd.DataFrame) -> dict:
 
 def save_shap_summary(model, X_sample: pd.DataFrame, path: Path) -> dict:
     import shap
+
+# TODO: medium - Add parameter to control number of top SHAP features returned
 
     explainer = shap.TreeExplainer(model)
     shap_values = explainer.shap_values(X_sample)
@@ -92,13 +96,14 @@ def run(model_path: Path = Path("models/churn_model.joblib"), n_samples: int = 2
     import joblib
 
     from src.models.evaluate import _load_data
-    from src.models.train import _preprocess_pipeline
+    from src.config import RAW_DATA_PATH
+    from src.data.preprocessing import preprocess
     from src.features.build_features import build_features, feature_sets
 
     model = joblib.load(model_path)
 
-    raw = pd.read_csv("data/raw/dataset.csv")
-    clean = _preprocess_pipeline(raw)
+    raw = pd.read_csv(RAW_DATA_PATH)
+    clean = preprocess(raw)
     frame = build_features(clean, include_sensitive=False)
     sets = feature_sets(frame)
     X = sets["X"]
@@ -124,6 +129,8 @@ def run(model_path: Path = Path("models/churn_model.joblib"), n_samples: int = 2
 
 def _shap_explainer(model, X_sample):
     import shap
+
+# TODO: medium - Add parameter to control number of top SHAP features returned
 
     return shap.TreeExplainer(model)
 

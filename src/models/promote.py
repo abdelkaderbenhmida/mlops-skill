@@ -21,6 +21,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 import argparse
 import json
+import os
 import logging
 from pathlib import Path
 
@@ -83,6 +84,7 @@ def promote(
 ) -> dict:
     """Evaluate all promotion gates and promote the model if they all pass."""
     mlflow.set_tracking_uri(MLFLOW_DIR.as_uri())
+    os.environ.setdefault("MLFLOW_ALLOW_FILE_STORE", "true")
     mlflow.set_experiment(experiment)
 
     # 1. Performance gate (F1).
@@ -149,11 +151,12 @@ def _evaluate_model(model_path: Path) -> dict:
 
 def _load_test_frame():
     from src.features.build_features import build_features, feature_sets
-    from src.models.train import _preprocess_pipeline
+    from src.config import RAW_DATA_PATH
+    from src.data.preprocessing import preprocess
     from sklearn.model_selection import train_test_split
 
-    raw = pd.read_csv("data/raw/dataset.csv")
-    clean = _preprocess_pipeline(raw)
+    raw = pd.read_csv(RAW_DATA_PATH)
+    clean = preprocess(raw)
     frame = build_features(clean, include_sensitive=False)
     sets = feature_sets(frame)
     _, X_test, _, y_test = train_test_split(

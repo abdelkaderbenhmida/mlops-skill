@@ -1,19 +1,18 @@
 name: dataset_checkpoint
 config_version: 1.0
 class_name: Checkpoint
-validations:
-  - batch_request:
-      datasource_name: pandas_datasource
-      data_connector_name: default_runtime_data_connector_name
-      data_asset_name: churn_dataset
-    expectation_suite_name: dataset_suite
-    action_list:
-      - name: store_validation_result
-        action:
-          class_name: StoreValidationResultAction
-      - name: store_evaluation_params
-        action:
-          class_name: StoreEvaluationParametersAction
-      - name: update_data_docs
-        action:
-          class_name: UpdateDataDocsAction
+
+# The batch_request is supplied at runtime by src/data/validation.py: the
+# datasource is a RuntimeDataConnector, so the batch is an in-memory
+# dataframe and cannot be declared statically here.
+expectation_suite_name: dataset_suite
+action_list:
+  - name: store_validation_result
+    action:
+      class_name: StoreValidationResultAction
+  - name: store_evaluation_params
+    action:
+      class_name: StoreEvaluationParametersAction
+  - name: update_data_docs
+    action:
+      class_name: UpdateDataDocsAction

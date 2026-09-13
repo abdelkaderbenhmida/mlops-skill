@@ -31,10 +31,11 @@ except ImportError:  # pragma: no cover
 def build_reference() -> pd.DataFrame:
     """Persist and return the training reference (for drift comparison)."""
     from src.features.build_features import build_features
-    from src.models.train import _preprocess_pipeline
+    from src.config import RAW_DATA_PATH
+    from src.data.preprocessing import preprocess
 
-    raw = pd.read_csv("data/raw/dataset.csv")
-    clean = _preprocess_pipeline(raw)
+    raw = pd.read_csv(RAW_DATA_PATH)
+    clean = preprocess(raw)
     frame = build_features(clean, include_sensitive=True)
 
     REFERENCE_DATA_PATH.parent.mkdir(parents=True, exist_ok=True)

@@ -1,4 +1,7 @@
 {
+  "expectation_suite_name": "dataset_suite",
+  "ge_cloud_id": null,
+  "data_asset_type": null,
   "meta": {
     "expectation_suite_name": "dataset_suite",
     "great_expectations_version": "0.18.0",
@@ -8,8 +11,13 @@
   "expectations": [
     {
       "expectation_type": "expect_table_row_count_to_be_between",
-      "kwargs": { "min_value": 5000, "max_value": 10000 },
-      "meta": { "description": "Minimum row count guard: 7000 rows expected." }
+      "kwargs": {
+        "min_value": 5000,
+        "max_value": 10000
+      },
+      "meta": {
+        "description": "Minimum row count guard: 7000 rows expected."
+      }
     },
     {
       "expectation_type": "expect_table_columns_to_match_ordered_list",
@@ -34,85 +42,173 @@
           "churn"
         ]
       },
-      "meta": { "description": "Schema contract: exact ordered column list." }
+      "meta": {
+        "description": "Schema contract: exact ordered column list."
+      }
     },
     {
       "expectation_type": "expect_column_values_to_not_be_null",
-      "kwargs": { "column": "customer_id" },
-      "meta": { "critical": true, "description": "No nulls on critical column." }
+      "kwargs": {
+        "column": "customer_id"
+      },
+      "meta": {
+        "critical": true,
+        "description": "No nulls on critical column."
+      }
     },
     {
       "expectation_type": "expect_column_values_to_not_be_null",
-      "kwargs": { "column": "age" },
-      "meta": { "critical": true, "description": "No nulls on critical column." }
+      "kwargs": {
+        "column": "age"
+      },
+      "meta": {
+        "critical": true,
+        "description": "No nulls on critical column."
+      }
     },
     {
       "expectation_type": "expect_column_values_to_not_be_null",
-      "kwargs": { "column": "gender" },
-      "meta": { "critical": true, "description": "No nulls on critical column (fairness)." }
+      "kwargs": {
+        "column": "gender"
+      },
+      "meta": {
+        "critical": true,
+        "description": "No nulls on critical column (fairness)."
+      }
     },
     {
       "expectation_type": "expect_column_values_to_not_be_null",
-      "kwargs": { "column": "churn" },
-      "meta": { "critical": true, "description": "No nulls on critical target column." }
+      "kwargs": {
+        "column": "churn"
+      },
+      "meta": {
+        "critical": true,
+        "description": "No nulls on critical target column."
+      }
     },
     {
       "expectation_type": "expect_column_values_to_not_be_null",
-      "kwargs": { "column": "tenure_months" },
-      "meta": { "critical": true, "description": "No nulls on critical column." }
+      "kwargs": {
+        "column": "tenure_months"
+      },
+      "meta": {
+        "critical": true,
+        "description": "No nulls on critical column."
+      }
     },
     {
       "expectation_type": "expect_column_values_to_be_between",
-      "kwargs": { "column": "age", "min_value": 18, "max_value": 100 },
-      "meta": { "description": "Age must be within 18-100." }
+      "kwargs": {
+        "column": "age",
+        "min_value": 18,
+        "max_value": 100
+      },
+      "meta": {
+        "description": "Age must be within 18-100."
+      }
     },
     {
       "expectation_type": "expect_column_values_to_be_between",
-      "kwargs": { "column": "tenure_months", "min_value": 0, "max_value": 120 },
-      "meta": { "description": "Tenure in months within valid range." }
+      "kwargs": {
+        "column": "tenure_months",
+        "min_value": 0,
+        "max_value": 120
+      },
+      "meta": {
+        "description": "Tenure in months within valid range."
+      }
     },
     {
       "expectation_type": "expect_column_values_to_be_between",
-      "kwargs": { "column": "monthly_charges", "min_value": 0, "max_value": 1000 },
-      "meta": { "description": "Monthly charges must be positive and bounded." }
+      "kwargs": {
+        "column": "monthly_charges",
+        "min_value": 0,
+        "max_value": 1000
+      },
+      "meta": {
+        "description": "Monthly charges must be positive and bounded."
+      }
     },
     {
       "expectation_type": "expect_column_values_to_be_between",
-      "kwargs": { "column": "support_tickets", "min_value": 0, "max_value": 100 },
-      "meta": { "description": "Support tickets must be non-negative and bounded." }
+      "kwargs": {
+        "column": "support_tickets",
+        "min_value": 0,
+        "max_value": 100
+      },
+      "meta": {
+        "description": "Support tickets must be non-negative and bounded."
+      }
     },
     {
       "expectation_type": "expect_column_values_to_be_in_set",
-      "kwargs": { "column": "gender", "value_set": ["M", "F"] },
-      "meta": { "description": "Gender only M/F (sensitive attribute)." }
+      "kwargs": {
+        "column": "gender",
+        "value_set": [
+          "M",
+          "F"
+        ]
+      },
+      "meta": {
+        "description": "Gender only M/F (sensitive attribute)."
+      }
     },
     {
       "expectation_type": "expect_column_values_to_be_in_set",
       "kwargs": {
         "column": "contract_type",
-        "value_set": ["month-to-month", "one_year", "two_year"]
+        "value_set": [
+          "month-to-month",
+          "one_year",
+          "two_year"
+        ]
       },
-      "meta": { "description": "Contract type in expected set." }
+      "meta": {
+        "description": "Contract type in expected set."
+      }
     },
     {
       "expectation_type": "expect_column_values_to_be_in_set",
-      "kwargs": { "column": "churn", "value_set": [0, 1] },
-      "meta": { "description": "Target is binary." }
+      "kwargs": {
+        "column": "churn",
+        "value_set": [
+          0,
+          1
+        ]
+      },
+      "meta": {
+        "description": "Target is binary."
+      }
     },
     {
       "expectation_type": "expect_column_values_to_be_of_type",
-      "kwargs": { "column": "customer_id", "type_": "int64" },
-      "meta": { "description": "Dtype consistency on customer_id." }
+      "kwargs": {
+        "column": "customer_id",
+        "type_": "int64"
+      },
+      "meta": {
+        "description": "Dtype consistency on customer_id."
+      }
     },
     {
       "expectation_type": "expect_column_values_to_be_of_type",
-      "kwargs": { "column": "age", "type_": "int64" },
-      "meta": { "description": "Dtype consistency on age." }
+      "kwargs": {
+        "column": "age",
+        "type_": "int64"
+      },
+      "meta": {
+        "description": "Dtype consistency on age."
+      }
     },
     {
       "expectation_type": "expect_column_values_to_be_of_type",
-      "kwargs": { "column": "monthly_charges", "type_": "float64" },
-      "meta": { "description": "Dtype consistency on monthly_charges." }
+      "kwargs": {
+        "column": "monthly_charges",
+        "type_": "float64"
+      },
+      "meta": {
+        "description": "Dtype consistency on monthly_charges."
+      }
     }
   ]
 }

@@ -1,0 +1,77 @@
+# Local GPU stack: MLflow (file store) + Postgres + GPU training + GPU serving.
+# No Azure. Everything runs on the local GPU host.
+#
+# NOTE: this project logs training runs to a LOCAL MLflow file store
+# (src/config.py -> MLFLOW_DIR = mlflow/mlruns). The mlflow service below
+# serves that same file store, so no remote tracking server is introduced.
+services:
+  postgres:
+    image: postgres:16
+    container_name: mlops-local-postgres
+    environment:
+      POSTGRES_USER: mlops
+      POSTGRES_PASSWORD: mlops
+      POSTGRES_DB: mlops
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mlops -d mlops"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mlflow:
+    build:
+      context: ./mlflow
+    container_name: mlops-local-mlflow
+    command: ["--host", "0.0.0.0", "--port", "5000", "--backend-store-uri", "file:///opt/mlflow/mlruns", "--default-artifact-root", "file:///opt/mlflow/mlruns"]
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./../mlflow/mlruns:/opt/mlflow/mlruns
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  train:
+    profiles: ["train"]
+    build:
+      context: ..
+      dockerfile: docker/training/Dockerfile
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    volumes:
+      - ./../data:/workspace/data
+      - ./../mlflow:/workspace/mlflow
+      - ./../models:/workspace/models
+      - ./../reports:/workspace/reports
+    depends_on:
+      - mlflow
+
+  api:
+    profiles: ["serve"]
+    build:
+      context: ..
+      dockerfile: docker/fastapi/Dockerfile
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    ports:
+      - "8000:8000"
+    depends_on:
+      - mlflow
+      - postgres
+
+volumes:
+  pg-data:

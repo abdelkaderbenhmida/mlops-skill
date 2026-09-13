@@ -5,7 +5,10 @@ __pycache__/
 venv/
 .ipynb_checkpoints/
 .pytest_cache/
-.dvc/
+# DVC: keep .dvc/config and .dvc/.gitignore tracked; dvc init writes
+# its own .dvc/.gitignore covering cache/tmp.
+.dvc/cache/
+.dvc/tmp/
 
 # generated artifacts (DVC / pipelines regenerate them)
 data/processed/*

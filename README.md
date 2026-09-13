@@ -158,8 +158,12 @@ python data/raw/generate_churn_data.py
 ### 3. Run Data Validation — Input Data Contract (Great Expectations)
 
 ```bash
-great_expectations checkpoint run dataset_checkpoint
+python3 -m src.data.validation
 ```
+
+> Le checkpoint `dataset_checkpoint` s'appuie sur un `RuntimeDataConnector` (batch
+> in-memory) : il ne peut pas être piloté via le CLI `great_expectations checkpoint run`.
+> Le contrat est exécuté par `src/data/validation.py` (et par le stage DVC `validate`).
 
 ### 4. Run DVC Pipeline
 

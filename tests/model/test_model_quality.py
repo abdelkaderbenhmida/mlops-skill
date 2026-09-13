@@ -1,30 +1,27 @@
-"""Model quality tests using Deepchecks."""
-import pytest
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
+"""Model quality tests (Deepchecks where available).
 
-from src.config import TARGET_COL
-from src.data.ingestion import ingest_raw_data
-from src.data.preprocessing import preprocess
-from src.models.train import DEFAULT_PARAMS
+Trains on the versioned churn dataset through the same feature pipeline the
+production trainer uses, so what is asserted here is what gets shipped.
+"""
+import pytest
+from sklearn.model_selection import train_test_split
+from xgboost import XGBClassifier
+
+from src.config import SENSITIVE_COL, TARGET_COL
+from src.models.train import DEFAULT_PARAMS, load_training_data
 
 
 @pytest.fixture(scope="module")
 def model_and_data():
-    """Train a fraud model on real data and expose test split."""
-    raw, _ = ingest_raw_data()
-    clean = preprocess(raw)
-
-    feature_cols = [c for c in clean.columns if c != TARGET_COL]
-    X = clean[feature_cols]
-    y = clean[TARGET_COL]
+    """Train a churn model and expose the held-out split."""
+    X, y = load_training_data()
 
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.25, random_state=42, stratify=y
     )
 
     params = {**DEFAULT_PARAMS, "n_estimators": 100}
-    model = RandomForestClassifier(**params)
+    model = XGBClassifier(**params)
     model.fit(X_train, y_train)
 
     return model, X_test, y_test
@@ -49,6 +46,13 @@ def test_model_predict_proba(model_and_data):
     assert (proba >= 0).all() and (proba <= 1).all()
 
 
+def test_sensitive_attribute_isolated(model_and_data):
+    """The protected attribute must never reach the model."""
+    _, X_test, _ = model_and_data
+    leaked = [c for c in X_test.columns if c.startswith(SENSITIVE_COL)]
+    assert not leaked, f"Sensitive attribute leaked into features: {leaked}"
+
+
 def test_model_performance_threshold(model_and_data):
     """Basic performance check - F1 should be reasonable."""
     from sklearn.metrics import f1_score
@@ -59,54 +63,63 @@ def test_model_performance_threshold(model_and_data):
     assert f1 >= 0.2, f"F1 score {f1:.4f} below minimum threshold"
 
 
+def test_model_auc_threshold(model_and_data):
+    from sklearn.metrics import roc_auc_score
+
+    model, X_test, y_test = model_and_data
+    auc = roc_auc_score(y_test, model.predict_proba(X_test)[:, 1])
+    assert auc >= 0.75, f"AUC {auc:.4f} below minimum threshold"
+
+
 def test_deepchecks_suite(model_and_data):
     """Run Deepchecks full suite if available."""
     try:
         from deepchecks.tabular import Dataset
         from deepchecks.tabular.suites import full_suite
-
-        model, X_test, y_test = model_and_data
-
-        # Deepchecks needs the full dataframe with label
-        test_df = X_test.copy()
-        test_df[TARGET_COL] = y_test.values
-
-        ds = Dataset(test_df, label=TARGET_COL)
-        suite = full_suite()
-        result = suite.run(ds, model=model)
-
-        # Check for critical failures
-        critical_failures = [
-            check.get_header() for check in result.results if not check.passed
-        ]
-
-        # If there are critical failures, print them for visibility
-        if critical_failures:
-            print(f"Deepchecks critical failures: {critical_failures}")
-
-        # This test passes if Deepchecks runs (even with failures - they're warnings)
-        # In production, you'd want: assert not critical_failures
-        assert True
-
     except ImportError:
         pytest.skip("deepchecks not available")
 
+    model, X_test, y_test = model_and_data
+
+    # Deepchecks needs the full dataframe with label
+    test_df = X_test.copy()
+    test_df[TARGET_COL] = y_test.values
+
+    ds = Dataset(test_df, label=TARGET_COL)
+    result = full_suite().run(ds, model=model)
+
+    critical_failures = [
+        check.get_header() for check in result.results if not check.passed
+    ]
+
+    # Failures are surfaced as warnings here; promotion gates in
+    # src/models/promote.py are what actually block a release.
+    if critical_failures:
+        print(f"Deepchecks critical failures: {critical_failures}")
+
 
 def test_model_feature_importance_stable(model_and_data):
-    """Check that top features are consistent (non-regression)."""
+    """Top features must stay in the churn-tenure/charges family."""
     import numpy as np
 
     model, X_test, _ = model_and_data
 
-    # Get feature importances
     importances = model.feature_importances_
-    top_features = np.argsort(importances)[-5:]  # Top 5 indices
-    top_feature_names = [X_test.columns[i] for i in top_features]
+    top_feature_names = {X_test.columns[i] for i in np.argsort(importances)[-5:]}
 
-    # PCA components known to drive credit card fraud detection
-    expected_important = {"V14", "V17", "V12", "V10", "V4", "V11", "V3"}
-    found_important = set(top_feature_names)
+    expected_important = {
+        "avg_charge_per_month",
+        "contract_type_one_year",
+        "contract_type_two_year",
+        "is_high_value_customer",
+        "payment_method_electronic_check",
+        "tenure_months",
+        "monthly_charges",
+        "is_long_tenure",
+    }
 
-    # At least 2 of the expected important features should be in top 5
-    overlap = len(expected_important & found_important)
-    assert overlap >= 2, f"Top features {top_feature_names} don't match expected {expected_important}"
+    overlap = len(expected_important & top_feature_names)
+    assert overlap >= 2, (
+        f"Top features {sorted(top_feature_names)} don't match "
+        f"expected {sorted(expected_important)}"
+    )

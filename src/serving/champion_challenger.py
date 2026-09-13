@@ -131,10 +131,11 @@ def _load_sample_features(n: int):
     import pandas as pd
 
     from src.features.build_features import build_features, feature_sets
-    from src.models.train import _preprocess_pipeline
+    from src.config import RAW_DATA_PATH
+    from src.data.preprocessing import preprocess
 
-    raw = pd.read_csv("data/raw/dataset.csv")
-    clean = _preprocess_pipeline(raw)
+    raw = pd.read_csv(RAW_DATA_PATH)
+    clean = preprocess(raw)
     frame = build_features(clean, include_sensitive=False)
     sets = feature_sets(frame)
     return sets["X"].head(n).to_numpy(dtype=np.float32)

@@ -1,4 +1,4 @@
-"""Data ingestion: load raw credit card fraud data and log key facts.
+"""Data ingestion: load the raw dataset and log key facts.
 
 Logs the row count, class distribution, and a SHA256 hash of the raw
 source file so every downstream artifact can be traced back to its input.
@@ -12,7 +12,7 @@ from typing import Tuple
 
 import pandas as pd
 
-from src.config import RAW_DATA_PATH
+from src.config import RAW_DATA_PATH, TARGET_COL, TIMESTAMP_COL
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -36,16 +36,18 @@ def ingest_raw_data(path=RAW_DATA_PATH) -> Tuple[pd.DataFrame, dict]:
     data_hash = file_hash(path)
     df = pd.read_csv(path)
 
-    time_col = "Time" if "Time" in df.columns else None
-    target_col = "Class" if "Class" in df.columns else None
+    time_col = TIMESTAMP_COL if TIMESTAMP_COL in df.columns else None
+    target_col = TARGET_COL if TARGET_COL in df.columns else None
 
     class_dist = df[target_col].value_counts().to_dict() if target_col else {}
 
     period = (
-        f"{df[time_col].min()} -> {df[time_col].max()} (seconds from first transaction)"
+        f"{df[time_col].min()} -> {df[time_col].max()}"
         if time_col is not None
         else "n/a"
     )
+
+    positive_rate = class_dist.get(1, 0) / len(df) if len(df) > 0 else 0
 
     metadata = {
         "rows": len(df),
@@ -54,12 +56,12 @@ def ingest_raw_data(path=RAW_DATA_PATH) -> Tuple[pd.DataFrame, dict]:
         "source_file": str(path),
         "source_hash": data_hash,
         "class_distribution": class_dist,
-        "fraud_rate": class_dist.get(1, 0) / len(df) if len(df) > 0 else 0,
+        "positive_rate": positive_rate,
     }
 
     logger.info("Ingested %d rows from %s", len(df), path)
     logger.info("Class distribution: %s", class_dist)
-    logger.info("Fraud rate: %.4f%%", metadata["fraud_rate"] * 100)
+    logger.info("Positive (%s=1) rate: %.4f%%", TARGET_COL, positive_rate * 100)
     logger.info("Covered time period: %s", period)
     logger.info("Source file hash: %s", data_hash)
 

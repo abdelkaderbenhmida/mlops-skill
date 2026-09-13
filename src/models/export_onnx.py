@@ -51,10 +51,11 @@ def export_to_onnx(model_path: Path = MODELS_DIR / "churn_model.joblib",
 
 def _load_feature_matrix() -> pd.DataFrame:
     from src.features.build_features import build_features, feature_sets
-    from src.models.train import _preprocess_pipeline
+    from src.config import RAW_DATA_PATH
+    from src.data.preprocessing import preprocess
 
-    raw = pd.read_csv("data/raw/dataset.csv")
-    clean = _preprocess_pipeline(raw)
+    raw = pd.read_csv(RAW_DATA_PATH)
+    clean = preprocess(raw)
     frame = build_features(clean, include_sensitive=False)
     sets = feature_sets(frame)
     X = sets["X"].astype(np.float32)

@@ -53,21 +53,22 @@ def _build_test_frame():
     """Return (y_test, y_pred, sensitive_series) aligned on the same split."""
     import joblib
 
+    from src.config import RAW_DATA_PATH, SENSITIVE_COL, TARGET_COL
+    from src.data.preprocessing import preprocess
     from src.features.build_features import build_features
-    from src.models.train import _preprocess_pipeline
 
-    raw = pd.read_csv("data/raw/dataset.csv")
-    clean = _preprocess_pipeline(raw)
+    raw = pd.read_csv(RAW_DATA_PATH)
+    clean = preprocess(raw)
 
     # gender is one-hot encoded (and dropped) inside build_features; keep the
     # raw series aligned positionally with the feature frame for the audit.
-    gender_all = clean["gender"].reset_index(drop=True)
+    gender_all = clean[SENSITIVE_COL].reset_index(drop=True)
     frame = build_features(clean, include_sensitive=False)
 
     model = joblib.load("models/churn_model.joblib")
 
-    X = frame.drop(columns=["churn"])
-    y = frame["churn"]
+    X = frame.drop(columns=[TARGET_COL])
+    y = frame[TARGET_COL]
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.25, random_state=42, stratify=y
     )
@@ -156,3 +157,6 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+# TODO: high - Add test to ensure protected attributes are excluded from feature schema
+# TODO: medium - Implement tiered severity gate with documented sign-off for Amber results

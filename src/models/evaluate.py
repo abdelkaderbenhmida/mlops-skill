@@ -44,7 +44,7 @@ def load_model(path: Path):
     return joblib.load(path)
 
 
-def evaluate(model, X_test, y_test, log_to_mlflow: bool = True, experiment: str = "fraud_eval") -> dict:
+def evaluate(model, X_test, y_test, log_to_mlflow: bool = True, experiment: str = "churn_eval") -> dict:
     y_pred = model.predict(X_test)
     y_proba = model.predict_proba(X_test)[:, 1]
 
@@ -86,7 +86,7 @@ def evaluate(model, X_test, y_test, log_to_mlflow: bool = True, experiment: str 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Evaluate a trained model.")
-    parser.add_argument("--model", default="models/fraud_model.joblib")
+    parser.add_argument("--model", default="models/churn_model.joblib")
     args = parser.parse_args()
 
     X, y = _load_data()

@@ -254,42 +254,23 @@ suite ([§21](#21-automated-model-validation-deepchecks)).
 
 ## 7. Architecture, revised
 
+```mermaid
+graph TD
+    subgraph "Loan Origination System (Engagement)"
+        LS[/Loan Origination System/]
+    end
+    LS -->|scoring request| DSS[Decision Service (BentoML)]
+    DSS -->|features -> model -> score| FS[Feast online store]
+    DSS -->|policy rules -> outcome| PR[Policy Rules]
+    DSS -->|SHAP -> reason codes| RC[Reason Code Engine]
+    DSS -->|every decision| DL[DECISION LEDGER]
+    DL -->|drift breach or scheduled review| EP[Evidence Pack]
+    DL -->|Staging, never auto-Production| RP[Retraining pipeline]
+    RP -->|GE -> DVC -> Feast -> train -> Optuna -> Deepchecks| GE[Great Expectations]
+    RP -->|Fairlearn gate -> SHAP -> Model Card -> Registry| FC[Fairlearn]
+    RP -->|SHAP -> Model Card -> Registry| SH[SHAP]
+    DSS -->|Evidence Pack generated + MRM approval| EP2[Evidence Pack]
 ```
-                       ┌────────────────────────────────────────┐
-                       │        Loan Origination System          │
-                       │        (system of engagement)           │
-                       └───────────────┬────────────────────────┘
-                                       │ scoring request
-                       ┌───────────────▼────────────────────────┐
-                       │      Decision Service (BentoML)         │
-                       │  ┌──────────────────────────────────┐   │
-   Feast online  ──────┼─▶│ features → model → score          │   │
-   store              │  │ → policy rules → outcome          │   │
-                       │  │ → SHAP → reason codes            │   │
-                       │  └──────────────┬───────────────────┘   │
-                       └─────────────────┼───────────────────────┘
-                                         │ every decision
-                       ┌─────────────────▼───────────────────────┐
-                       │      DECISION LEDGER (append-only)      │
-                       │  hash-chained · 7-year retention        │
-                       └──┬──────────────┬─────────────────┬─────┘
-                          │              │                 │
-              ┌───────────▼──┐  ┌────────▼────────┐  ┌────▼──────────────┐
-              │ Evidently    │  │ Human Oversight │  │ Audit / Regulator │
-              │ drift + perf │  │ Console         │  │ export API        │
-              └───────┬──────┘  └─────────────────┘  └───────────────────┘
-                      │ drift breach or scheduled review
-              ┌───────▼─────────────────────────────────────────┐
-              │  Retraining pipeline (ZenML)                     │
-              │  GE → DVC → Feast → train → Optuna → Deepchecks  │
-              │  → Fairlearn gate → SHAP → Model Card → Registry │
-              └───────┬─────────────────────────────────────────┘
-                      │ Staging, never auto-Production
-              ┌───────▼──────────────────────────────────────────┐
-              │  Evidence Pack generated + MRM approval required  │
-              └──────────────────────────────────────────────────┘
-```
-
 **The one architectural rule that defines the product: no model reaches Production without
 a generated evidence pack and a recorded human approval.** Automatic promotion to Staging
 is fine and desirable. Automatic promotion to Production is exactly what regulators prohibit.

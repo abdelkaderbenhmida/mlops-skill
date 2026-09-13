@@ -1,12 +1,10 @@
 # Model Card: Customer Churn Classifier (Attest demo artifact)
 
-*Generated automatically on 2026-08-17T13:10:39.187911*
+*Generated automatically on 2026-08-25T10:34:50.757254*
 
-> This card is the auto-generated Evidence Pack artifact for the **demo model** bundled with
-> the Attest platform (see `mlops-full-mlops-skills-project.md`). The platform's target use
-> case is consumer credit decisioning; the demo model below is a churn classifier trained on
-> synthetic telecom-style data. Regenerated at every promotion by
-> `model_cards/model_card_template.py`.
+> Auto-generated demo artifact of the Attest model-risk platform (see
+> `mlops-full-mlops-skills-project.md`). The platform's target use case is model risk
+> & AI compliance; this churn model exercises the platform's governance pipeline.
 
 ## Model details
 
@@ -16,7 +14,7 @@
 
 ## Intended use
 
-- Valid: churn risk scoring for telecom customers
+- Valid: churn risk scoring for telecom customers (demo only)
 - Avoid: credit decisions, medical predictions, or any other domain
 
 ## Training data
@@ -28,9 +26,9 @@
 
 | Metric | Value |
 | --- | --- |
-| accuracy | 0.8994 |
-| f1_score | 0.2542 |
-| roc_auc | 0.5736 |
+| accuracy | 0.8674 |
+| f1_score | 0.4554 |
+| roc_auc | 0.7086 |
 
 ## Fairness analysis (Fairlearn)
 

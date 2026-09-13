@@ -57,11 +57,18 @@ def derive_features(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def one_hot_encode(df: pd.DataFrame, columns: List[str]) -> pd.DataFrame:
-    """One-hot encode categorical columns (drops first level, keeps type)."""
+    """One-hot encode categorical columns (drops first level).
+
+    Indicators are emitted as ``int8`` rather than pandas' default ``bool``:
+    downstream consumers (Evidently drift reports, ONNX export) cannot
+    interpret a boolean extension dtype as a numeric type.
+    """
     out = df.copy()
     for col in columns:
         if col in out.columns:
-            out = pd.get_dummies(out, columns=[col], prefix=col, drop_first=True)
+            out = pd.get_dummies(
+                out, columns=[col], prefix=col, drop_first=True, dtype="int8"
+            )
     return out
 
 

@@ -1,4 +1,4 @@
-"""Pure preprocessing functions for credit card fraud data.
+"""Pure preprocessing functions for the customer churn dataset.
 
 Every transformation is a pure function operating on a DataFrame and
 returning a new DataFrame, so each step is independently testable and
@@ -14,6 +14,7 @@ import pandas as pd
 from src.config import (
     BINARY_FEATURES,
     CATEGORICAL_FEATURES,
+    NUMERIC_RANGES,
     NUMERIC_FEATURES,
     TARGET_COL,
     TIMESTAMP_COL,
@@ -37,10 +38,7 @@ def clamp_numeric(
     numeric_features: Optional[List[str]] = None,
 ) -> pd.DataFrame:
     """Clamp numeric features to reasonable ranges."""
-    bounds = ranges or {
-        "Time": (0, None),
-        "Amount": (0, 100000),
-    }
+    bounds = ranges or NUMERIC_RANGES
     features = numeric_features or NUMERIC_FEATURES
     out = df.copy()
     for col in features:
@@ -59,6 +57,12 @@ def cast_dtypes(df: pd.DataFrame) -> pd.DataFrame:
     for col in NUMERIC_FEATURES:
         if col in out.columns:
             out[col] = pd.to_numeric(out[col], errors="coerce")
+    for col in BINARY_FEATURES:
+        if col in out.columns:
+            out[col] = pd.to_numeric(out[col], errors="coerce").astype("int8")
+    for col in CATEGORICAL_FEATURES:
+        if col in out.columns:
+            out[col] = out[col].astype("string")
     if TARGET_COL in out.columns:
         out[TARGET_COL] = out[TARGET_COL].astype("int8")
     return out
