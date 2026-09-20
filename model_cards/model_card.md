@@ -1,6 +1,6 @@
 # Model Card: Customer Churn Classifier (Attest demo artifact)
 
-*Generated automatically on 2026-08-25T10:34:50.757254*
+*Generated automatically on 2026-09-20T06:47:21.832735*
 
 > Auto-generated demo artifact of the Attest model-risk platform (see
 > `mlops-full-mlops-skills-project.md`). The platform's target use case is model risk
@@ -26,9 +26,9 @@
 
 | Metric | Value |
 | --- | --- |
-| accuracy | 0.8674 |
-| f1_score | 0.4554 |
-| roc_auc | 0.7086 |
+| accuracy | 0.7672 |
+| f1_score | 0.5572 |
+| roc_auc | 0.6986 |
 
 ## Fairness analysis (Fairlearn)
 

@@ -27,18 +27,18 @@ def ingest_data() -> tuple:
 
 @step
 def validate_data(df_metadata: tuple) -> bool:
-    """Run Great Expectations checkpoint on raw data."""
-    import great_expectations as ge
+    """Run the Great Expectations data contract on raw data.
 
-    df, metadata = df_metadata
-    context = ge.get_context(context_root_dir="great_expectations")
-    checkpoint = context.checkpoints.get("dataset_checkpoint")
-    result = checkpoint.run(batch_request={"batch_data": df})
-    passed = result.success
-    logger.info(f"Great Expectations validation: {'PASSED' if passed else 'FAILED'}")
-    if not passed:
+    Delegates to src.data.validation.validate() (GX 0.18 API, driven
+    programmatically) instead of the old context.checkpoints path.
+    """
+    from src.data.validation import validate
+
+    summary = validate()
+    logger.info(f"Great Expectations validation: {'PASSED' if summary['success'] else 'FAILED'}")
+    if not summary["success"]:
         raise ValueError("Data validation failed - pipeline aborted")
-    return passed
+    return summary["success"]
 
 
 @step

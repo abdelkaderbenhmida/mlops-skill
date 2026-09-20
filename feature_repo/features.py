@@ -15,8 +15,12 @@ from datetime import timedelta
 from feast import Field, FeatureView
 from feast.types import Float32, Int64
 
-from feature_repo.data_sources import customer_features_source
-from feature_repo.entities import customer
+try:
+    from feature_repo.data_sources import customer_features_source
+    from feature_repo.entities import customer
+except ImportError:  # running from inside feature_repo/ (e.g. `feast apply`)
+    from data_sources import customer_features_source
+    from entities import customer
 
 customer_features = FeatureView(
     name="customer_features",

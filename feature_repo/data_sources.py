@@ -10,13 +10,14 @@ retrieval returns the latest values, so offline and online features match.
 from __future__ import annotations
 
 from feast import FileSource
+from feast.data_format import ParquetFormat
 
-CUSTOMER_FEATURES_PATH = "data/features/feast_features.parquet"
+CUSTOMER_FEATURES_PATH = "../data/features/feast_features.parquet"
 
 customer_features_source = FileSource(
     name="customer_features_source",
     path=CUSTOMER_FEATURES_PATH,
     timestamp_field="timestamp",
     created_timestamp_column=None,
-    file_format="parquet",
+    file_format=ParquetFormat(),
 )

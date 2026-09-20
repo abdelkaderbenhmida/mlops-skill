@@ -1,10 +1,13 @@
 """BentoML serving service: ``/predict`` and ``/explain`` endpoints.
 
-The service loads the registered MLflow model and exposes:
+Loads the trained model artifact (``models/churn_model.joblib``) and exposes:
 - ``predict``: returns the churn probability + class label,
 - ``explain``: returns per-feature SHAP contributions for the instance.
 
-Run with: ``bentoml serve src.serving.bento_service:svc``
+BentoML 1.4 API (@bentoml.service class + @bentoml.api methods; the old
+``bentoml.io`` / ``bentoml.Service`` API was removed in 1.3).
+
+Run with: ``bentoml serve src.serving.bento_service:ChurnService``
 """
 
 from __future__ import annotations
@@ -17,53 +20,50 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 import numpy as np
-import pandas as pd
-
 import bentoml
-from bentoml.io import JSON, NumpyNdarray
 
-MODEL_TAG = "churn_model:production"
-
-
-def _load_runner():
-    model_ref = bentoml.mlflow.get(MODEL_TAG)
-    return model_ref.to_runner()
+MODEL_PATH = PROJECT_ROOT / "models" / "churn_model.joblib"
 
 
-runner = _load_runner()
+@bentoml.service(name="mlops_churn_service")
+class ChurnService:
+    def __init__(self) -> None:
+        self._model = None
 
-svc = bentoml.Service("mlops_churn_service", runners=[runner])
+    def _load_model(self):
+        if self._model is None:
+            import joblib
 
+            self._model = joblib.load(MODEL_PATH)
+        return self._model
 
-@svc.api(input=NumpyNdarray(), output=JSON())
-def predict(input_data: np.ndarray) -> dict:
-    """Return the predicted class and churn probability."""
-    arr = np.asarray(input_data, dtype=np.float32)
-    proba = runner.predict_proba.run(arr)[:, 1]
-    pred = (proba >= 0.5).astype(int)
-    return {
-        "prediction": pred.tolist(),
-        "churn_probability": proba.tolist(),
-    }
+    @bentoml.api
+    def predict(self, input_data: np.ndarray) -> dict:
+        """Return the predicted class and churn probability."""
+        arr = np.asarray(input_data, dtype=np.float32)
+        proba = self._load_model().predict_proba(arr)[:, 1]
+        pred = (proba >= 0.5).astype(int)
+        return {
+            "prediction": pred.tolist(),
+            "churn_probability": proba.tolist(),
+        }
 
+    @bentoml.api
+    def explain(self, input_data: np.ndarray) -> dict:
+        """Return SHAP contributions for the given instance(s)."""
+        arr = np.asarray(input_data, dtype=np.float32)
+        import shap
 
-@svc.api(input=NumpyNdarray(), output=JSON())
-def explain(input_data: np.ndarray) -> dict:
-    """Return SHAP force values for the given instance(s)."""
-    arr = np.asarray(input_data, dtype=np.float32)
-    model = _model_ref()
-    import shap
+        explainer = shap.TreeExplainer(self._load_model())
+        shap_values = explainer.shap_values(arr)
+        if isinstance(shap_values, list):
+            shap_values = shap_values[1] if len(shap_values) > 1 else shap_values[0]
 
-    explainer = shap.TreeExplainer(model)
-    shap_values = explainer.shap_values(arr)
-    if isinstance(shap_values, list):
-        shap_values = shap_values[1] if len(shap_values) > 1 else shap_values[0]
+        expected_value = explainer.expected_value
+        if isinstance(expected_value, (list, np.ndarray)):
+            expected_value = expected_value[1] if len(expected_value) > 1 else expected_value[0]
 
-    return {
-        "expected_value": float(explainer.expected_value),
-        "shap_values": shap_values.tolist(),
-    }
-
-
-def _model_ref():
-    return bentoml.mlflow.get(MODEL_TAG).load()
+        return {
+            "expected_value": float(expected_value),
+            "shap_values": shap_values.tolist(),
+        }

@@ -146,7 +146,17 @@ def build_feast_features(df: pd.DataFrame) -> pd.DataFrame:
     feature values match.
     """
     out = derive_features(df)
-    keep = [ID_COL, TIMESTAMP_COL] + NUMERIC_FEATURES + BINARY_FEATURES + CATEGORICAL_FEATURES + [TARGET_COL]
+    # Engineered features must be included: the Feast FeatureView schema
+    # (feature_repo/features.py) declares them alongside the base features.
+    engineered = [
+        "avg_charge_per_month",
+        "service_density",
+        "ticket_intensity",
+        "is_long_tenure",
+        "is_high_value_customer",
+        "usage_efficiency",
+    ]
+    keep = [ID_COL, TIMESTAMP_COL] + NUMERIC_FEATURES + BINARY_FEATURES + CATEGORICAL_FEATURES + engineered + [TARGET_COL]
     keep = [c for c in dict.fromkeys(keep) if c in out.columns]
     out = out[keep]
     if TIMESTAMP_COL in out.columns and not pd.api.types.is_numeric_dtype(out[TIMESTAMP_COL]):
